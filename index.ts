@@ -1,7 +1,6 @@
 import {
 	http,
 	type Address,
-	createPublicClient,
 	createWalletClient,
 	maxUint256,
 	parseEther,
@@ -15,18 +14,18 @@ if (!process.env.PRIVATE_KEY) throw new Error("PRIVATE_KEY is required");
 if (!process.env.PUBLIC_API_URL) throw new Error("PUBLIC_API_URL is required");
 
 const PUBLIC_API_URL = process.env.PUBLIC_API_URL;
-const NATIVE_TOKEN: `0x${string}` =
-	"0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
+const NATIVE_TOKEN: Address = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
+const HONEY: Address = "0x7EeCA4205fF31f947EdBd49195a7A88E6A91161B";
+const USDC: Address = "0x6581e59A1C8dA66eD0D313a0d4029DcE2F746Cc5";
 
 const swapParams = {
 	tokenIn: NATIVE_TOKEN,
-	tokenOut: "0x6581e59a1c8da66ed0d313a0d4029dce2f746cc5" as Address,
-	amount: parseEther("0.0001"),
+	tokenOut: USDC,
+	amount: parseEther("0.01"),
 	to: "0x2e50c47def5aa3fb5ff58cb561cbecff65ddb1e3" as Address,
 	from: "0x2e50c47def5aa3fb5ff58cb561cbecff65ddb1e3" as Address,
-	slippage: 0.1,
+	slippage: 0.01,
 };
-
 type SwapParams = typeof swapParams;
 
 const account = privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`);
@@ -67,7 +66,6 @@ const approveAllowance = async (
 		from: tx.from as Address,
 		to: tx.to as Address,
 		data: tx.data as `0x${string}`,
-		value: tx.value,
 	});
 
 	const rcpt = await client.waitForTransactionReceipt({
@@ -86,27 +84,29 @@ const swap = async (swapParams: SwapParams) => {
 	publicApiUrl.searchParams.set("slippage", swapParams.slippage.toString());
 
 	const res = await fetch(publicApiUrl);
-	const { tx } = await res.json();
-	console.log(tx);
+	const { tx, ...metadata } = await res.json();
+	console.log(metadata);
 
 	console.log("Submitting swap...");
 	const hash = await client.sendTransaction({
 		from: tx.from as Address,
 		to: tx.to as Address,
 		data: tx.data as `0x${string}`,
-		value: tx.value as bigint,
+		value: tx.value ? BigInt(tx.value) : 0n,
 	});
+	console.log("hash", hash);
 
 	const rcpt = await client.waitForTransactionReceipt({
 		hash,
 	});
-	console.log("Swap complete", rcpt.transactionHash, rcpt.status);
+	console.log("Swap complete", rcpt.status);
 };
 
 async function main() {
 	// Check allowance
 	const allowance = await getAllowance(swapParams.tokenIn, swapParams.from);
 	console.log("Allowance", allowance);
+
 	// Approve if necessary
 	if (allowance < swapParams.amount) {
 		await approveAllowance(

@@ -14,7 +14,6 @@
 	},
 	"trustedDependencies": ["@biomejs/biome"],
 	"scripts": {
-		"lint": "biome check .",
-		"format": "biome format . --write"
+		"check": "biome check . --apply"
 	}
 }
