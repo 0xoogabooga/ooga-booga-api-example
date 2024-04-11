@@ -10,12 +10,13 @@ import { privateKeyToAccount } from "viem/accounts";
 import { berachainTestnet } from "viem/chains";
 
 if (!process.env.PRIVATE_KEY) throw new Error("PRIVATE_KEY is required");
-
 if (!process.env.PUBLIC_API_URL) throw new Error("PUBLIC_API_URL is required");
+if (!process.env.API_KEY) throw new Error("API_KEY is required");
 
 const PUBLIC_API_URL = process.env.PUBLIC_API_URL;
+const API_KEY = process.env.API_KEY;
+
 const NATIVE_TOKEN: Address = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
-const HONEY: Address = "0x7EeCA4205fF31f947EdBd49195a7A88E6A91161B";
 const USDC: Address = "0x6581e59A1C8dA66eD0D313a0d4029DcE2F746Cc5";
 
 const swapParams = {
@@ -28,8 +29,11 @@ const swapParams = {
 };
 type SwapParams = typeof swapParams;
 
-const account = privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`);
+const headers = {
+	Authorization: `Bearer ${API_KEY}`,
+};
 
+const account = privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`);
 const client = createWalletClient({
 	chain: berachainTestnet,
 	transport: http(),
@@ -39,11 +43,13 @@ const client = createWalletClient({
 const getAllowance = async (token: Address, from: Address) => {
 	if (token === NATIVE_TOKEN) return maxUint256;
 
-	const publicApiUrl = new URL(`${PUBLIC_API_URL}/approve/allowance`);
+	const publicApiUrl = new URL(`${PUBLIC_API_URL}/v1/approve/allowance`);
 	publicApiUrl.searchParams.set("token", token);
 	publicApiUrl.searchParams.set("from", from);
 
-	const res = await fetch(publicApiUrl);
+	const res = await fetch(publicApiUrl, {
+		headers,
+	});
 	const json = await res.json();
 	return json.allowance;
 };
@@ -53,12 +59,12 @@ const approveAllowance = async (
 	from: Address,
 	amount: bigint,
 ) => {
-	const publicApiUrl = new URL(`${PUBLIC_API_URL}/approve`);
+	const publicApiUrl = new URL(`${PUBLIC_API_URL}/v1/approve`);
 	publicApiUrl.searchParams.set("token", token);
 	publicApiUrl.searchParams.set("from", from);
 	publicApiUrl.searchParams.set("amount", amount.toString());
 
-	const res = await fetch(publicApiUrl);
+	const res = await fetch(publicApiUrl, { headers });
 	const { tx } = await res.json();
 
 	console.log("Submitting approve...");
@@ -75,7 +81,7 @@ const approveAllowance = async (
 };
 
 const swap = async (swapParams: SwapParams) => {
-	const publicApiUrl = new URL(`${PUBLIC_API_URL}/swap`);
+	const publicApiUrl = new URL(`${PUBLIC_API_URL}/v1/swap`);
 	publicApiUrl.searchParams.set("tokenIn", swapParams.tokenIn);
 	publicApiUrl.searchParams.set("from", swapParams.from);
 	publicApiUrl.searchParams.set("amount", swapParams.amount.toString());
@@ -83,9 +89,8 @@ const swap = async (swapParams: SwapParams) => {
 	publicApiUrl.searchParams.set("to", swapParams.to);
 	publicApiUrl.searchParams.set("slippage", swapParams.slippage.toString());
 
-	const res = await fetch(publicApiUrl);
-	const { tx, ...metadata } = await res.json();
-	console.log(metadata);
+	const res = await fetch(publicApiUrl, { headers });
+	const { tx } = await res.json();
 
 	console.log("Submitting swap...");
 	const hash = await client.sendTransaction({
