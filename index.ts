@@ -25,7 +25,7 @@ const swapParams = {
 	amount: parseEther("0.01"),
 	to: "0x2e50c47def5aa3fb5ff58cb561cbecff65ddb1e3" as Address,
 	from: "0x2e50c47def5aa3fb5ff58cb561cbecff65ddb1e3" as Address,
-	slippage: 0.01,
+	slippage: 0.01, // Range from 0 to 1
 };
 type SwapParams = typeof swapParams;
 

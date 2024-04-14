@@ -1,4 +1,4 @@
-# api-integration-example
+# Ooga Booga API Example Guide
 
 To install dependencies:
 
