@@ -1,5 +1,5 @@
 {
-	"name": "api-integration-example",
+	"name": "ooga-booga-api-example",
 	"module": "index.ts",
 	"type": "module",
 	"devDependencies": {
