@@ -19,12 +19,14 @@ const API_KEY = process.env.API_KEY;
 const NATIVE_TOKEN: Address = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 const USDC: Address = "0x6581e59A1C8dA66eD0D313a0d4029DcE2F746Cc5";
 
+const account = privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`);
+
 const swapParams = {
 	tokenIn: NATIVE_TOKEN,
 	tokenOut: USDC,
 	amount: parseEther("0.01"),
-	to: "0x2e50c47def5aa3fb5ff58cb561cbecff65ddb1e3" as Address,
-	from: "0x2e50c47def5aa3fb5ff58cb561cbecff65ddb1e3" as Address,
+	to: account.address,
+	from: account.address,
 	slippage: 0.01, // Range from 0 to 1
 };
 type SwapParams = typeof swapParams;
@@ -33,7 +35,6 @@ const headers = {
 	Authorization: `Bearer ${API_KEY}`,
 };
 
-const account = privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`);
 const client = createWalletClient({
 	chain: berachainTestnet,
 	transport: http(),
@@ -69,7 +70,7 @@ const approveAllowance = async (
 
 	console.log("Submitting approve...");
 	const hash = await client.sendTransaction({
-		from: tx.from as Address,
+		account: tx.from as Address,
 		to: tx.to as Address,
 		data: tx.data as `0x${string}`,
 	});
@@ -94,7 +95,7 @@ const swap = async (swapParams: SwapParams) => {
 
 	console.log("Submitting swap...");
 	const hash = await client.sendTransaction({
-		from: tx.from as Address,
+		account: tx.from as Address,
 		to: tx.to as Address,
 		data: tx.data as `0x${string}`,
 		value: tx.value ? BigInt(tx.value) : 0n,

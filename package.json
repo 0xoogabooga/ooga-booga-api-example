@@ -4,16 +4,17 @@
 	"type": "module",
 	"devDependencies": {
 		"@biomejs/biome": "^1.6.4",
-		"@types/bun": "latest"
-	},
-	"peerDependencies": {
+		"@types/bun": "latest",
 		"typescript": "^5.0.0"
 	},
 	"dependencies": {
 		"viem": "^2.9.9"
 	},
-	"trustedDependencies": ["@biomejs/biome"],
+	"trustedDependencies": [
+		"@biomejs/biome"
+	],
 	"scripts": {
-		"check": "biome check . --apply"
+		"check": "biome check . --apply",
+		"compile": "tsc"
 	}
 }
