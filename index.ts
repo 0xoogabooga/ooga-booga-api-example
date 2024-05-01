@@ -5,29 +5,37 @@ import {
 	maxUint256,
 	parseEther,
 	publicActions,
-} from "viem";
+} from "viem"; // Main library used to interface with the blockchain
 import { privateKeyToAccount } from "viem/accounts";
 import { berachainTestnet } from "viem/chains";
 
+// Ensure that no required environment variables are missing
 if (!process.env.PRIVATE_KEY) throw new Error("PRIVATE_KEY is required");
 if (!process.env.PUBLIC_API_URL) throw new Error("PUBLIC_API_URL is required");
 if (!process.env.API_KEY) throw new Error("API_KEY is required");
 
+// Ensure no sensitive information is hardcoded
+const PRIVATE_KEY = process.env.PRIVATE_KEY as Address;
 const PUBLIC_API_URL = process.env.PUBLIC_API_URL;
 const API_KEY = process.env.API_KEY;
 
-const NATIVE_TOKEN: Address = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
-const USDC: Address = "0x6581e59A1C8dA66eD0D313a0d4029DcE2F746Cc5";
+const account = privateKeyToAccount(PRIVATE_KEY);
+const client = createWalletClient({
+	chain: berachainTestnet,
+	transport: http(),
+	account,
+}).extend(publicActions);
 
-const account = privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`);
+const NATIVE_TOKEN: Address = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"; // Default address for Bera native token
+const HONEY: Address = "0x7EeCA4205fF31f947EdBd49195a7A88E6A91161B"; // 
 
 const swapParams = {
-	tokenIn: NATIVE_TOKEN,
-	tokenOut: USDC,
-	amount: parseEther("0.01"),
-	to: account.address,
-	from: account.address,
-	slippage: 0.01, // Range from 0 to 1
+	tokenIn: NATIVE_TOKEN, // Address of the token swapping from (BERA)
+	tokenOut: HONEY, // Address of the token swapping to (HONEY)
+	amount: parseEther("0.01"), // Amount of tokenIn to swap
+	from: account.address, // Address to send tokenIn from
+	to: account.address, // Address to send tokenOut to (optional and defaults to `from`)
+	slippage: 0.01, // Range from 0 to 1 to allow for price slippage
 };
 type SwapParams = typeof swapParams;
 
@@ -35,13 +43,8 @@ const headers = {
 	Authorization: `Bearer ${API_KEY}`,
 };
 
-const client = createWalletClient({
-	chain: berachainTestnet,
-	transport: http(),
-	account,
-}).extend(publicActions);
-
 const getAllowance = async (token: Address, from: Address) => {
+	// Native token does not require approvals for allowance
 	if (token === NATIVE_TOKEN) return maxUint256;
 
 	const publicApiUrl = new URL(`${PUBLIC_API_URL}/v1/approve/allowance`);
@@ -118,7 +121,7 @@ async function main() {
 		await approveAllowance(
 			swapParams.tokenIn,
 			swapParams.from,
-			swapParams.amount,
+			swapParams.amount - allowance, // Only approve amount remaining
 		);
 	}
 	// Swap
