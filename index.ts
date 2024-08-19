@@ -5,9 +5,10 @@ import {
 	maxUint256,
 	parseEther,
 	publicActions,
+	zeroAddress,
 } from "viem"; // Main library used to interface with the blockchain
 import { privateKeyToAccount } from "viem/accounts";
-import { berachainTestnet } from "viem/chains";
+import { berachainTestnetbArtio } from "viem/chains";
 
 // Ensure that no required environment variables are missing
 if (!process.env.PRIVATE_KEY) throw new Error("PRIVATE_KEY is required");
@@ -20,20 +21,22 @@ const PUBLIC_API_URL = process.env.PUBLIC_API_URL;
 const API_KEY = process.env.API_KEY;
 
 const account = privateKeyToAccount(PRIVATE_KEY);
+console.log("Caller:", account.address)
+
 const client = createWalletClient({
-	chain: berachainTestnet,
+	chain: berachainTestnetbArtio,
 	transport: http(),
 	account,
 }).extend(publicActions);
 
-const NATIVE_TOKEN: Address = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"; // Default address for Bera native token
-const HONEY: Address = "0x7EeCA4205fF31f947EdBd49195a7A88E6A91161B"; // 
+// Bartio token addresses
+const NATIVE_TOKEN: Address = zeroAddress; // Default address for Bera native token
+const HONEY: Address = "0x0E4aaF1351de4c0264C5c7056Ef3777b41BD8e03"; // 
 
 const swapParams = {
 	tokenIn: NATIVE_TOKEN, // Address of the token swapping from (BERA)
 	tokenOut: HONEY, // Address of the token swapping to (HONEY)
-	amount: parseEther("0.01"), // Amount of tokenIn to swap
-	from: account.address, // Address to send tokenIn from
+	amount: parseEther("0.02"), // Amount of tokenIn to swap
 	to: account.address, // Address to send tokenOut to (optional and defaults to `from`)
 	slippage: 0.01, // Range from 0 to 1 to allow for price slippage
 };
@@ -60,12 +63,10 @@ const getAllowance = async (token: Address, from: Address) => {
 
 const approveAllowance = async (
 	token: Address,
-	from: Address,
 	amount: bigint,
 ) => {
 	const publicApiUrl = new URL(`${PUBLIC_API_URL}/v1/approve`);
 	publicApiUrl.searchParams.set("token", token);
-	publicApiUrl.searchParams.set("from", from);
 	publicApiUrl.searchParams.set("amount", amount.toString());
 
 	const res = await fetch(publicApiUrl, { headers });
@@ -87,7 +88,6 @@ const approveAllowance = async (
 const swap = async (swapParams: SwapParams) => {
 	const publicApiUrl = new URL(`${PUBLIC_API_URL}/v1/swap`);
 	publicApiUrl.searchParams.set("tokenIn", swapParams.tokenIn);
-	publicApiUrl.searchParams.set("from", swapParams.from);
 	publicApiUrl.searchParams.set("amount", swapParams.amount.toString());
 	publicApiUrl.searchParams.set("tokenOut", swapParams.tokenOut);
 	publicApiUrl.searchParams.set("to", swapParams.to);
@@ -113,14 +113,13 @@ const swap = async (swapParams: SwapParams) => {
 
 async function main() {
 	// Check allowance
-	const allowance = await getAllowance(swapParams.tokenIn, swapParams.from);
+	const allowance = await getAllowance(swapParams.tokenIn, account.address);
 	console.log("Allowance", allowance);
 
 	// Approve if necessary
 	if (allowance < swapParams.amount) {
 		await approveAllowance(
 			swapParams.tokenIn,
-			swapParams.from,
 			swapParams.amount - allowance, // Only approve amount remaining
 		);
 	}
